@@ -14,7 +14,12 @@
 /* Create an empty queue */
 struct list_head *q_new()
 {
-    return NULL;
+    struct list_head *head;
+    queue_contex_t *contex = malloc(sizeof(queue_contex_t));
+    head = &contex->chain;
+    INIT_LIST_HEAD(head);
+    contex->size = 0;
+    return head;
 }
 
 /* Free all storage used by queue */
