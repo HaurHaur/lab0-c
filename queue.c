@@ -18,7 +18,7 @@ struct list_head *q_new()
     queue_contex_t *contex = malloc(sizeof(queue_contex_t));
     head = &contex->chain;
     INIT_LIST_HEAD(head);
-    contex->size = 10;
+    contex->size = 0;
     return head;
 }
 
@@ -28,12 +28,28 @@ void q_free(struct list_head *l) {}
 /* Insert an element at head of queue */
 bool q_insert_head(struct list_head *head, char *s)
 {
+    if (!head)
+        return false;
+    queue_contex_t *contex = container_of(head, queue_contex_t, chain);
+    contex->size++;
+    element_t *new_node = malloc(sizeof(element_t));
+    strncpy(new_node->value, s, strlen(s) + 1);  // plus one for '\0'
+    struct list_head *node_ptr = &new_node->list;
+    list_add(node_ptr, head);
     return true;
 }
 
 /* Insert an element at tail of queue */
 bool q_insert_tail(struct list_head *head, char *s)
 {
+    if (!head)
+        return false;
+    queue_contex_t *contex = container_of(head, queue_contex_t, chain);
+    contex->size++;
+    element_t *new_node = malloc(sizeof(element_t));
+    strncpy(new_node->value, s, strlen(s) + 1);
+    struct list_head *node_ptr = &new_node->list;
+    list_add_tail(node_ptr, head);
     return true;
 }
 
@@ -52,6 +68,8 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 /* Return number of elements in queue */
 int q_size(struct list_head *head)
 {
+    if (!head)
+        return 0;
     queue_contex_t *contex = container_of(head, queue_contex_t, chain);
     return contex->size;
 }
