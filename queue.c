@@ -138,7 +138,7 @@ bool q_delete_mid(struct list_head *head)
         return false;
 
     queue_contex_t *contex = container_of(head, queue_contex_t, chain);
-    int pos = (contex->size) / 2;
+    int pos = (contex->size) / 2;  // position of element that should be delete
     contex->size--;
     element_t *cur, *tmp;
     list_for_each_entry_safe (cur, tmp, head, list) {
@@ -166,7 +166,20 @@ void q_swap(struct list_head *head)
 }
 
 /* Reverse elements in queue */
-void q_reverse(struct list_head *head) {}
+void q_reverse(struct list_head *head)
+{
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+    struct list_head *cur, *tmp;
+    list_for_each_safe (cur, tmp, head) {
+        cur->next = cur->prev;
+        cur->prev = tmp;
+    }
+    tmp = head->next;
+    head->next = head->prev;
+    head->prev = tmp;
+    return;
+}
 
 /* Reverse the nodes of the list k at a time */
 void q_reverseK(struct list_head *head, int k)
