@@ -92,8 +92,10 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     contex->size--;
     element_t *removed_node = container_of(head->next, element_t, list);
     if (sp && bufsize > 0) {
-        strncpy(sp, removed_node->value, bufsize - 1);
-        removed_node->value[bufsize - 1] = '\0';
+        // size_t len = (strlen(removed_node->value) + 1 )* sizeof(char) <
+        // bufsize ? strlen(removed_node->value) + 1 : bufsize;
+        strncpy(sp, removed_node->value, bufsize);
+        sp[bufsize - 1] = '\0';
     }
 
     list_del_init(head->next);
@@ -113,8 +115,10 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
     contex->size--;
     element_t *removed_node = container_of(head->prev, element_t, list);
     if (sp && bufsize > 0) {
-        strncpy(sp, removed_node->value, bufsize - 1);
-        removed_node->value[bufsize - 1] = '\0';
+        // size_t len = (strlen(removed_node->value) + 1 )* sizeof(char) <
+        // bufsize ? strlen(removed_node->value) + 1 : bufsize;
+        strncpy(sp, removed_node->value, bufsize);
+        sp[bufsize - 1] = '\0';
     }
 
     list_del_init(head->prev);
