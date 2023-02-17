@@ -15,27 +15,46 @@
 struct list_head *q_new()
 {
     struct list_head *head;
-    queue_contex_t *contex = malloc(sizeof(queue_contex_t));
+    queue_contex_t *contex = (queue_contex_t *) malloc(sizeof(queue_contex_t));
     head = &contex->chain;
     INIT_LIST_HEAD(head);
     contex->size = 0;
+
     return head;
 }
 
 /* Free all storage used by queue */
-void q_free(struct list_head *l) {}
+void q_free(struct list_head *l)
+{
+    if (!l)
+        return;
+    element_t *cur, *tmp;
+    list_for_each_entry_safe (cur, tmp, l, list) {
+        list_del(&cur->list);
+        q_release_element(cur);
+    }
+    queue_contex_t *contex = container_of(l, queue_contex_t, chain);
+    free(contex);
+}
 
 /* Insert an element at head of queue */
 bool q_insert_head(struct list_head *head, char *s)
 {
     if (!head)
         return false;
+
     queue_contex_t *contex = container_of(head, queue_contex_t, chain);
     contex->size++;
     element_t *new_node = malloc(sizeof(element_t));
-    strncpy(new_node->value, s, strlen(s) + 1);  // plus one for '\0'
-    struct list_head *node_ptr = &new_node->list;
-    list_add(node_ptr, head);
+    if (!new_node)
+        return false;
+    new_node->value = malloc((strlen(s) + 1) * sizeof(char));
+    if (!new_node->value) {
+        free(new_node);
+        return false;
+    }
+    strncpy(new_node->value, s, (strlen(s) + 1));  // plus one for '\0'
+    list_add(&new_node->list, head);
     return true;
 }
 
@@ -44,25 +63,59 @@ bool q_insert_tail(struct list_head *head, char *s)
 {
     if (!head)
         return false;
+
     queue_contex_t *contex = container_of(head, queue_contex_t, chain);
     contex->size++;
     element_t *new_node = malloc(sizeof(element_t));
-    strncpy(new_node->value, s, strlen(s) + 1);
-    struct list_head *node_ptr = &new_node->list;
-    list_add_tail(node_ptr, head);
+    if (!new_node)
+        return false;
+    new_node->value = malloc((strlen(s) + 1) * sizeof(char));
+    if (!new_node->value) {
+        free(new_node);
+        return false;
+    }
+    strncpy(new_node->value, s, (strlen(s) + 1));  // plus one for '\0'
+    list_add_tail(&new_node->list, head);
+
     return true;
 }
 
 /* Remove an element from head of queue */
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    if (!head)
+        return NULL;
+
+    queue_contex_t *contex = container_of(head, queue_contex_t, chain);
+    contex->size--;
+    element_t *removed_node = container_of(head->next, element_t, list);
+    if (sp && bufsize > 0) {
+        strncpy(sp, removed_node->value, bufsize - 1);
+        removed_node->value[bufsize - 1] = '\0';
+    }
+
+    list_del_init(head->next);
+
+    return removed_node;
 }
 
 /* Remove an element from tail of queue */
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    if (!head)
+        return NULL;
+
+    queue_contex_t *contex = container_of(head, queue_contex_t, chain);
+    contex->size--;
+    element_t *removed_node = container_of(head->prev, element_t, list);
+    if (sp && bufsize > 0) {
+        strncpy(sp, removed_node->value, bufsize - 1);
+        removed_node->value[bufsize - 1] = '\0';
+    }
+
+    list_del_init(head->prev);
+
+    return removed_node;
 }
 
 /* Return number of elements in queue */
