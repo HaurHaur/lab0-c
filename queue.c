@@ -30,7 +30,6 @@ void q_free(struct list_head *l)
         return;
     element_t *cur, *tmp;
     list_for_each_entry_safe (cur, tmp, l, list) {
-        list_del(&cur->list);
         q_release_element(cur);
     }
     queue_contex_t *contex = container_of(l, queue_contex_t, chain);
@@ -86,6 +85,9 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     if (!head)
         return NULL;
 
+    if (list_empty(head))
+        return NULL;
+
     queue_contex_t *contex = container_of(head, queue_contex_t, chain);
     contex->size--;
     element_t *removed_node = container_of(head->next, element_t, list);
@@ -95,7 +97,6 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     }
 
     list_del_init(head->next);
-
     return removed_node;
 }
 
@@ -103,6 +104,9 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
     if (!head)
+        return NULL;
+
+    if (list_empty(head))
         return NULL;
 
     queue_contex_t *contex = container_of(head, queue_contex_t, chain);
