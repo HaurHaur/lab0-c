@@ -43,7 +43,6 @@ bool q_insert_head(struct list_head *head, char *s)
         return false;
 
     queue_contex_t *contex = container_of(head, queue_contex_t, chain);
-    contex->size++;
     element_t *new_node = malloc(sizeof(element_t));
     if (!new_node)
         return false;
@@ -52,6 +51,7 @@ bool q_insert_head(struct list_head *head, char *s)
         free(new_node);
         return false;
     }
+    contex->size++;
     strncpy(new_node->value, s, (strlen(s) + 1));  // plus one for '\0'
     list_add(&new_node->list, head);
     return true;
@@ -64,7 +64,6 @@ bool q_insert_tail(struct list_head *head, char *s)
         return false;
 
     queue_contex_t *contex = container_of(head, queue_contex_t, chain);
-    contex->size++;
     element_t *new_node = malloc(sizeof(element_t));
     if (!new_node)
         return false;
@@ -73,6 +72,7 @@ bool q_insert_tail(struct list_head *head, char *s)
         free(new_node);
         return false;
     }
+    contex->size++;
     strncpy(new_node->value, s, (strlen(s) + 1));  // plus one for '\0'
     list_add_tail(&new_node->list, head);
 
@@ -92,8 +92,6 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     contex->size--;
     element_t *removed_node = container_of(head->next, element_t, list);
     if (sp && bufsize > 0) {
-        // size_t len = (strlen(removed_node->value) + 1 )* sizeof(char) <
-        // bufsize ? strlen(removed_node->value) + 1 : bufsize;
         strncpy(sp, removed_node->value, bufsize);
         sp[bufsize - 1] = '\0';
     }
@@ -115,8 +113,6 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
     contex->size--;
     element_t *removed_node = container_of(head->prev, element_t, list);
     if (sp && bufsize > 0) {
-        // size_t len = (strlen(removed_node->value) + 1 )* sizeof(char) <
-        // bufsize ? strlen(removed_node->value) + 1 : bufsize;
         strncpy(sp, removed_node->value, bufsize);
         sp[bufsize - 1] = '\0';
     }
@@ -163,10 +159,35 @@ bool q_delete_dup(struct list_head *head)
     return true;
 }
 
+/* Swap two list_heads of queue and move two pointers to next position*/
+void list_swap(struct list_head **cur, struct list_head **next)
+{
+    if (!cur || !next) {
+        return;
+    }
+
+    (*cur)->next = (*next)->next;
+    (*next)->prev = (*cur)->prev;
+    (*cur)->next->prev = *cur;
+    (*next)->prev->next = *next;
+    (*cur)->prev = *next;
+    (*next)->next = *cur;
+    *next = (*cur)->next;
+    return;
+}
+
 /* Swap every two adjacent nodes */
 void q_swap(struct list_head *head)
 {
-    // https://leetcode.com/problems/swap-nodes-in-pairs/
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+    struct list_head *cur, *next;
+    list_for_each_safe (cur, next, head) {
+        if (next == head)
+            return;
+        list_swap(&cur, &next);
+    }
+    return;
 }
 
 /* Reverse elements in queue */
