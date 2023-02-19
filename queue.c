@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,13 +15,13 @@
 /* Create an empty queue */
 struct list_head *q_new()
 {
-    struct list_head *head;
     queue_contex_t *contex = (queue_contex_t *) malloc(sizeof(queue_contex_t));
-    head = &contex->chain;
-    INIT_LIST_HEAD(head);
+    if (!contex)
+        return NULL;
+    INIT_LIST_HEAD(&contex->chain);
     contex->size = 0;
 
-    return head;
+    return &contex->chain;
 }
 
 /* Free all storage used by queue */
@@ -82,10 +83,7 @@ bool q_insert_tail(struct list_head *head, char *s)
 /* Remove an element from head of queue */
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
-    if (!head)
-        return NULL;
-
-    if (list_empty(head))
+    if (!head || list_empty(head))
         return NULL;
 
     queue_contex_t *contex = container_of(head, queue_contex_t, chain);
@@ -103,10 +101,7 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 /* Remove an element from tail of queue */
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
-    if (!head)
-        return NULL;
-
-    if (list_empty(head))
+    if (!head || list_empty(head))
         return NULL;
 
     queue_contex_t *contex = container_of(head, queue_contex_t, chain);
@@ -212,8 +207,70 @@ void q_reverseK(struct list_head *head, int k)
     // https://leetcode.com/problems/reverse-nodes-in-k-group/
 }
 
+struct list_head *mergeTwoLists(struct list_head *left, struct list_head *right)
+{
+    if (!left || !right)
+        return right;
+    struct list_head **node = NULL, *head = right, **ptr = &head->next, *cur,
+                     *safe;
+    right = right->next;
+    // element_t *l, *r;
+    for (; left != head && right != head; *node = (*node)->next) {
+        // l = container_of(left, element_t, list)->value;
+        // r = container_of(right, element_t, list)->value;
+        node = strcmp(container_of(left, element_t, list)->value,
+                      container_of(right, element_t, list)->value) <= 0
+                   ? &left
+                   : &right;
+        *ptr = *node;
+        ptr = &(*ptr)->next;
+    }
+    *ptr = left == head ? right : left;
+    list_for_each_safe (cur, safe, head) {  // recover prev link
+        safe->prev = cur;
+    }
+    head->next->prev = head;
+
+    return head;
+}
+
 /* Sort elements of queue in ascending order */
-void q_sort(struct list_head *head) {}
+void q_sort(struct list_head *head)
+{
+    if (!head || list_empty(head))
+        return;
+
+    if (list_is_singular(head)) {
+        head->next->prev = head;
+        return;
+    }
+
+    struct list_head *cur, *safe, *left, *right, *last;
+    queue_contex_t *contex = container_of(head, queue_contex_t, chain);
+    int n = contex->size;
+    int pos = n / 2;
+    // printf("this is %d elements \n", n);
+    list_for_each_safe (cur, safe, head) {  // devide
+        if (pos == 1) {
+            last = head->prev;
+            head->prev = cur;
+            cur->next = head;
+            contex->size = n / 2;
+            q_sort(head);
+            left = head->next;
+            head->next = safe;
+            head->prev = last;
+            contex->size = n - n / 2;
+            q_sort(head);
+            right = head;
+            contex->size = n;
+            mergeTwoLists(left, right);
+            safe = head;
+        }
+        pos--;
+    }
+    return;
+}
 
 /* Remove every node which has a node with a strictly greater value anywhere to
  * the right side of it */
