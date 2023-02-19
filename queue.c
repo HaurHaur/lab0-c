@@ -214,10 +214,7 @@ struct list_head *mergeTwoLists(struct list_head *left, struct list_head *right)
     struct list_head **node = NULL, *head = right, **ptr = &head->next, *cur,
                      *safe;
     right = right->next;
-    // element_t *l, *r;
     for (; left != head && right != head; *node = (*node)->next) {
-        // l = container_of(left, element_t, list)->value;
-        // r = container_of(right, element_t, list)->value;
         node = strcmp(container_of(left, element_t, list)->value,
                       container_of(right, element_t, list)->value) <= 0
                    ? &left
@@ -249,7 +246,6 @@ void q_sort(struct list_head *head)
     queue_contex_t *contex = container_of(head, queue_contex_t, chain);
     int n = contex->size;
     int pos = n / 2;
-    // printf("this is %d elements \n", n);
     list_for_each_safe (cur, safe, head) {  // devide
         if (pos == 1) {
             last = head->prev;
@@ -276,8 +272,22 @@ void q_sort(struct list_head *head)
  * the right side of it */
 int q_descend(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    return 0;
+    if (!head || list_empty(head))
+        return 0;
+    queue_contex_t *contex = container_of(head, queue_contex_t, chain);
+    struct list_head *cur, *safe;
+    char *max_c = container_of(head->prev, element_t, list)->value, *c;
+    for (cur = head->prev->prev, safe = cur->prev; cur != head;
+         cur = safe, safe = safe->prev) {
+        c = container_of(cur, element_t, list)->value;
+        if (strcmp(c, max_c) < 0) {
+            list_del(cur);
+            contex->size--;
+        } else {
+            max_c = c;
+        }
+    }
+    return contex->size;
 }
 
 /* Merge all the queues into one sorted queue, which is in ascending order */
