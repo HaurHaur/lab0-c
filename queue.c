@@ -276,23 +276,74 @@ int q_descend(struct list_head *head)
         return 0;
     queue_contex_t *contex = container_of(head, queue_contex_t, chain);
     struct list_head *cur, *safe;
-    char *max_c = container_of(head->prev, element_t, list)->value, *c;
+    char *max_c = container_of(head->prev, element_t, list)->value;
+    element_t *e;
     for (cur = head->prev->prev, safe = cur->prev; cur != head;
          cur = safe, safe = safe->prev) {
-        c = container_of(cur, element_t, list)->value;
-        if (strcmp(c, max_c) < 0) {
+        e = container_of(cur, element_t, list);
+        if (strcmp(e->value, max_c) < 0) {
             list_del(cur);
+            q_release_element(e);
             contex->size--;
         } else {
-            max_c = c;
+            max_c = e->value;
         }
     }
     return contex->size;
 }
 
 /* Merge all the queues into one sorted queue, which is in ascending order */
+struct list_head *merge_two_list(struct list_head *left,
+                                 struct list_head *right)
+{
+    if (!left || !right)
+        return !left ? right : left;
+    struct list_head *head = NULL, **ptr = &head, **node;
+    for (node = NULL; left && right; ptr = &(*ptr)->next) {
+        node = strcmp(container_of(left, element_t, list)->value,
+                      container_of(right, element_t, list)->value) <= 0
+                   ? &left
+                   : &right;
+        *ptr = *node;
+        *node = (*node)->next;
+    }
+    *ptr = (struct list_head *) ((uintptr_t) left | (uintptr_t) right);
+    return head;
+}
+
 int q_merge(struct list_head *head)
 {
-    // https://leetcode.com/problems/merge-k-sorted-lists/
-    return 0;
+    if (!head || list_empty(head))
+        return 0;
+    if (list_is_singular(head))
+        return 1;
+    queue_contex_t *cur, *safe;
+    struct list_head *left, *right,
+        *q_head = container_of(head->next, queue_contex_t, chain)->q;
+    queue_contex_t *contex = container_of(q_head, queue_contex_t, chain);
+    while (head->next != head->prev) {
+        list_for_each_entry_safe (cur, safe, head, chain) {
+            if (&safe->chain != head) {
+                cur->q->prev->next = NULL;
+                safe->q->prev->next = NULL;
+                cur->q->next =
+                    merge_two_list(list_empty(cur->q) ? NULL : cur->q->next,
+                                   list_empty(safe->q) ? NULL : safe->q->next);
+                cur = safe;
+                safe =
+                    container_of((&(safe->chain))->next, queue_contex_t, chain);
+                list_del(&cur->chain);
+            }
+        }
+    }
+    size_t s = 0;
+    for (left = q_head, right = left->next; right != NULL;
+         left = right, right = right->next) {  // recover prev link
+        right->prev = left;
+        s++;
+    }
+    left->next = q_head;
+    q_head->prev = left;
+    contex->size = s;
+    return s;
 }
