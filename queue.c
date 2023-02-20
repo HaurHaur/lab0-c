@@ -150,7 +150,33 @@ bool q_delete_mid(struct list_head *head)
 /* Delete all nodes that have duplicate string */
 bool q_delete_dup(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
+    if (!head)
+        return false;
+
+    bool f = false;
+    queue_contex_t *contex = container_of(head, queue_contex_t, chain);
+    struct list_head *cur, *safe;
+    list_for_each_safe (cur, safe, head) {
+        if (!f && safe != head) {
+            if (strcmp(list_entry(cur, element_t, list)->value,
+                       list_entry(safe, element_t, list)->value) == 0) {
+                list_del(cur);
+                q_release_element(list_entry(cur, element_t, list));
+                contex->size--;
+                f = true;
+            }
+        }
+
+        else if (f) {
+            f = safe != head
+                    ? strcmp(list_entry(cur, element_t, list)->value,
+                             list_entry(safe, element_t, list)->value) == 0
+                    : false;
+            list_del(cur);
+            q_release_element(list_entry(cur, element_t, list));
+            contex->size--;
+        }
+    }
     return true;
 }
 
@@ -204,7 +230,33 @@ void q_reverse(struct list_head *head)
 /* Reverse the nodes of the list k at a time */
 void q_reverseK(struct list_head *head, int k)
 {
-    // https://leetcode.com/problems/reverse-nodes-in-k-group/
+    if (!head || list_empty(head))
+        return;
+    int size = q_size(head), c = 0;
+    struct list_head *cur, *safe, *first = head;
+    list_for_each_safe (cur, safe, head) {
+        if (size - c >= k) {
+            if (c % k == 0) {
+                first = cur->prev;
+                cur->prev = cur->next;
+            }
+
+            if (c % k == k - 1) {
+                first->next->next = cur->next;
+                cur->next->prev = first->next;
+                cur->next = cur->prev;
+                first->next = cur;
+                cur->prev = first;
+            }
+
+            if (c % k != 0 && c % k != k - 1) {
+                cur->next = cur->prev;
+                cur->prev = safe;
+            }
+        }
+        c++;
+    }
+    return;
 }
 
 struct list_head *mergeTwoLists(struct list_head *left, struct list_head *right)
