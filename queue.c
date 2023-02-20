@@ -344,7 +344,7 @@ int q_descend(struct list_head *head)
     return contex->size;
 }
 
-/* Merge all the queues into one sorted queue, which is in ascending order */
+// /* Merge all the queues into one sorted queue, which is in ascending order */
 struct list_head *merge_two_list(struct list_head *left,
                                  struct list_head *right)
 {
@@ -371,6 +371,7 @@ int q_merge(struct list_head *head)
         return 1;
     queue_contex_t *cur, *safe;
     struct list_head *left, *right,
+        *rm = NULL, **ptr = &rm,
         *q_head = container_of(head->next, queue_contex_t, chain)->q;
     queue_contex_t *contex = container_of(q_head, queue_contex_t, chain);
     while (head->next != head->prev) {
@@ -384,10 +385,19 @@ int q_merge(struct list_head *head)
                 cur = safe;
                 safe =
                     container_of((&(safe->chain))->next, queue_contex_t, chain);
-                list_del(&cur->chain);
+                list_del_init(&cur->chain);
+                INIT_LIST_HEAD(cur->q);
+                *ptr = &(cur->chain);
+                ptr = &(*ptr)->next;
             }
         }
     }
+    *ptr = NULL;
+    for (left = rm, right = left->next; left;
+         left = right, right = right ? right->next : NULL) {
+        list_add_tail(left, head);
+    }
+
     size_t s = 0;
     for (left = q_head, right = left->next; right != NULL;
          left = right, right = right->next) {  // recover prev link
@@ -399,3 +409,36 @@ int q_merge(struct list_head *head)
     contex->size = s;
     return s;
 }
+
+// merge with first queue
+// int q_merge(struct list_head *head)
+// {
+//     if (!head || list_empty(head))
+//         return 0;
+//     if (list_is_singular(head))
+//         return 1;
+//     queue_contex_t *cur, *first = list_first_entry(head, queue_contex_t,
+//     chain); first->q->prev->next = NULL; struct list_head *left, *right;
+//     list_for_each_entry (cur, head, chain) {
+//         if (cur != first) {
+//             cur->q->prev->next = NULL;
+//             // list_entry(first->q, queue_contex_t, chain)->size
+//             first->q->next =
+//                 merge_two_list(list_empty(cur->q) ? NULL : cur->q->next,
+//                                 list_empty(first->q) ? NULL :
+//                                 first->q->next);
+//             INIT_LIST_HEAD(cur->q);
+//         }
+
+//     }
+//     size_t s = 0;
+//     for (left = first->q, right = left->next; right != NULL;
+//          left = right, right = right->next) {  // recover prev link
+//         right->prev = left;
+//         s++;
+//     }
+//     left->next = first->q;
+//     first->q->prev = left;
+//     first->size = s;
+//     return s;
+// }
