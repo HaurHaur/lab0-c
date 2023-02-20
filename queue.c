@@ -11,6 +11,9 @@
  *   cppcheck-suppress nullPointer
  */
 
+struct list_head *merge_two_list(struct list_head *left,
+                                 struct list_head *right);
+struct list_head *merge_sort(struct list_head *head, int size);
 
 /* Create an empty queue */
 struct list_head *q_new()
@@ -259,65 +262,103 @@ void q_reverseK(struct list_head *head, int k)
     return;
 }
 
-struct list_head *mergeTwoLists(struct list_head *left, struct list_head *right)
-{
-    if (!left || !right)
-        return right;
-    struct list_head **node = NULL, *head = right, **ptr = &head->next, *cur,
-                     *safe;
-    right = right->next;
-    for (; left != head && right != head; *node = (*node)->next) {
-        node = strcmp(container_of(left, element_t, list)->value,
-                      container_of(right, element_t, list)->value) <= 0
-                   ? &left
-                   : &right;
-        *ptr = *node;
-        ptr = &(*ptr)->next;
-    }
-    *ptr = left == head ? right : left;
-    list_for_each_safe (cur, safe, head) {  // recover prev link
-        safe->prev = cur;
-    }
-    head->next->prev = head;
+// merge sort with header
+// struct list_head *mergeTwoLists(struct list_head *left, struct list_head
+// *right)
+// {
+//     if (!left || !right)
+//         return right;
+//     struct list_head **node = NULL, *head = right, **ptr = &head->next, *cur,
+//                      *safe;
+//     right = right->next;
+//     for (; left != head && right != head; *node = (*node)->next) {
+//         node = strcmp(container_of(left, element_t, list)->value,
+//                       container_of(right, element_t, list)->value) <= 0
+//                    ? &left
+//                    : &right;
+//         *ptr = *node;
+//         ptr = &(*ptr)->next;
+//     }
+//     *ptr = left == head ? right : left;
+//     list_for_each_safe (cur, safe, head) {  // recover prev link
+//         safe->prev = cur;
+//     }
+//     head->next->prev = head;
 
-    return head;
-}
+//     return head;
+// }
 
 /* Sort elements of queue in ascending order */
+// void q_sort(struct list_head *head)
+// {
+//     if (!head || list_empty(head))
+//         return;
+
+//     if (list_is_singular(head)) {
+//         head->next->prev = head;
+//         return;
+//     }
+
+//     struct list_head *cur, *safe, *left, *right, *last;
+//     queue_contex_t *contex = container_of(head, queue_contex_t, chain);
+//     int n = contex->size;
+//     int pos = n / 2;
+//     list_for_each_safe (cur, safe, head) {  // devide
+//         if (pos == 1) {
+//             last = head->prev;
+//             head->prev = cur;
+//             cur->next = head;
+//             contex->size = n / 2;
+//             q_sort(head);
+//             left = head->next;
+//             head->next = safe;
+//             head->prev = last;
+//             contex->size = n - n / 2;
+//             q_sort(head);
+//             right = head;
+//             contex->size = n;
+//             mergeTwoLists(left, right);
+//             safe = head;
+//         }
+//         pos--;
+//     }
+//     return;
+// }
+
 void q_sort(struct list_head *head)
 {
-    if (!head || list_empty(head))
+    if (!head || list_empty(head) || list_is_singular(head))
         return;
+    struct list_head *cur, *safe;
+    head->prev = NULL;
+    head->next = merge_sort(head->next, q_size(head));
+    for (cur = head, safe = cur->next; safe; cur = safe, safe = safe->next) {
+        safe->prev = cur;
+    }
+    cur->next = head;
+    head->prev = cur;
+    return;
+}
 
-    if (list_is_singular(head)) {
-        head->next->prev = head;
-        return;
+struct list_head *merge_sort(struct list_head *head, int size)
+{
+    if (size == 1) {
+        head->next = NULL;
+        return head;
     }
 
-    struct list_head *cur, *safe, *left, *right, *last;
-    queue_contex_t *contex = container_of(head, queue_contex_t, chain);
-    int n = contex->size;
-    int pos = n / 2;
-    list_for_each_safe (cur, safe, head) {  // devide
-        if (pos == 1) {
-            last = head->prev;
-            head->prev = cur;
-            cur->next = head;
-            contex->size = n / 2;
-            q_sort(head);
-            left = head->next;
-            head->next = safe;
-            head->prev = last;
-            contex->size = n - n / 2;
-            q_sort(head);
-            right = head;
-            contex->size = n;
-            mergeTwoLists(left, right);
-            safe = head;
-        }
+    struct list_head *right = NULL, *left = head;
+    int pos = size / 2;
+    while (pos != 1) {
+        left = left->next;
         pos--;
     }
-    return;
+    right = left->next;
+    left->next = NULL;
+    left = merge_sort(head, size / 2);
+    right = merge_sort(right, size - size / 2);
+    head = merge_two_list(left, right);
+    return head;
 }
 
 /* Remove every node which has a node with a strictly greater value anywhere to
